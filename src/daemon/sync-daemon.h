@@ -3,16 +3,17 @@
 
 #include <string>
 
-#include "logger.h"
+#include "logger/logger.h"
 #include "basedaemon.h"
-#include "inotify-cxx.h"
+#include "inotify/inotify-cxx.h"
 
 class SyncDaemon : public BaseDaemon
 {
 private:
     std::string * watch_dir;
+    static constexpr char * daemon_name = const_cast<char *>("inotify_daemon");
 public:
-    SyncDaemon(char * name, char * dir);
+    SyncDaemon(char * dir);
     ~SyncDaemon(){ this->finish_daemon(); }
     int run();
     static void signal_handler(int signal);

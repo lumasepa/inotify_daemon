@@ -14,13 +14,13 @@
 #include <fstream>
 //remove
 #include <cstdlib>
-#include "logger.h"
+#include "logger/logger.h"
 
 class BaseDaemon {
 protected:
-    char * daemon_name;
     bool is_daemon;
     void (*signal_handler_ptr)(int);
+    char * name;
 public:
     BaseDaemon(){signal_handler_ptr = BaseDaemon::signal_handler;};
     BaseDaemon(char * name){};

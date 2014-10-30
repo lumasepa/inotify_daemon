@@ -49,12 +49,9 @@ int BaseDaemon::daemonize()
         signal(i,*signal_handler_ptr);
     }
 
-    logger.debug() << "Creating file " << std::string("/var/run/") + this->daemon_name + ".pid" << "..." << lend;
-    std::fstream out( (std::string("/var/run/") + this->daemon_name + ".pid").c_str());
-    out << pid;
-    out.close();
+    logger.debug() << "Daemon initialized suscefuly" << lend;
 
-    logger.info() << "Daemon initialized suscefuly" << lend;
+    return 0;
 }
 
 void BaseDaemon::signal_handler(int signal){
@@ -63,7 +60,7 @@ void BaseDaemon::signal_handler(int signal){
 
 void BaseDaemon::finish_daemon(){
     if (this->is_daemon) {
-        logger.debug() << "Deleting file " << std::string("/var/run/") + this->daemon_name + ".pid" << "..." << lend;
-        remove((std::string("/var/run/") + this->daemon_name + ".pid").c_str());
+        logger.debug() << "Deleting file " << std::string("/var/run/") + this->name + ".pid" << "..." << lend;
+        remove((std::string("/var/run/") + this->name + ".pid").c_str());
     }
 }

@@ -1,11 +1,11 @@
 #include "sync-daemon.h"
 #include <sys/signal.h>
 
-SyncDaemon::SyncDaemon(char *name, char *dir) {
+SyncDaemon::SyncDaemon(char *dir) {
     watch_dir = new std::string(dir);
-    daemon_name = name;
     is_daemon = true;
     signal_handler_ptr = SyncDaemon::signal_handler;
+    name = const_cast<char*>(SyncDaemon::daemon_name);
 }
 
 
@@ -20,16 +20,13 @@ int SyncDaemon::run() {
         for (;;) {
             notify.WaitForEvents();
 
-            size_t count = notify.GetEventCount();
-            while (count > 0) {
+            for (size_t i = notify.GetEventCount(); i > 0; --i) {
                 InotifyEvent * event = new InotifyEvent();
                 bool got_event = notify.GetEvent(event);
 
                 if (got_event) {
                     this->file_changed(event);
                 }
-
-                count--;
             }
         }
     } catch (InotifyException &e) {
@@ -61,10 +58,15 @@ void SyncDaemon::signal_handler(int signal) {
             break;
         case SIGTERM:
             logger.info() << "terminate signal catched" << lend;
+            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << "..." << lend;
+            remove((std::string("/var/run/") + SyncDaemon::daemon_name + ".pid").c_str());
             exit(0);
             break;
         default:
             logger.info() << "signal " << signal << " catched" << lend;
+            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << "..." << lend;
+            remove((std::string("/var/run/") + SyncDaemon::daemon_name + ".pid").c_str());
+            exit(0);
             break;
     }
 }
