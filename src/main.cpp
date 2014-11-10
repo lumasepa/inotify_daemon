@@ -22,7 +22,7 @@ int main(int argc, char ** argv)
     options.log_level = DEBUG;
     options.parseopts(argc, argv);
 
-    if (getuid() != 0)
+    if (options.daemon && getuid() != 0)
     {
         std::cout << "inotify_daemon should run as root" << std::endl;
         exit(10);
@@ -39,8 +39,9 @@ int main(int argc, char ** argv)
         std::cout << "Opened log " << options.log_file << std::endl;
     }
 
-    logger.set_stream(log);
-    logger.set_level(INFO);
+    //logger.set_stream(log);
+    logger.set_stream(&cout);
+    logger.set_level(options.log_level);
 
 
     syncDaemon = new SyncDaemon(const_cast<char*>(options.watch_path.c_str()));

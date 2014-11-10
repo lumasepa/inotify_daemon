@@ -1,11 +1,16 @@
 #include "sync-daemon.h"
 #include <sys/signal.h>
 
+
+// This is the unique way to access to the vector in the callback function
+std::vector<std::string> * global_directories_to_watch;
+
 SyncDaemon::SyncDaemon(char *dir) {
     watch_dir = new std::string(dir);
     is_daemon = true;
     signal_handler_ptr = SyncDaemon::signal_handler;
     name = const_cast<char*>(SyncDaemon::daemon_name);
+    directories_to_watch = new std::vector<std::string>();
 }
 
 
@@ -13,10 +18,15 @@ int SyncDaemon::run() {
     try {
         Inotify notify;
 
-        InotifyWatch watch(*watch_dir, IN_ALL_EVENTS);
-        notify.Add(watch);
+        this->get_all_sub_directories();
 
-        logger.info() << "Watching directory " << *watch_dir << lend;
+        for (auto item : *(directories_to_watch)) {
+            InotifyWatch watch(item.c_str(), IN_ALL_EVENTS);
+            notify.Add(watch);
+            logger.info() << "Watching directory " << item << lend;
+        }
+
+
         for (;;) {
             notify.WaitForEvents();
 
@@ -58,15 +68,29 @@ void SyncDaemon::signal_handler(int signal) {
             break;
         case SIGTERM:
             logger.info() << "terminate signal catched" << lend;
-            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << "..." << lend;
+            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << " ..." << lend;
             remove((std::string("/var/run/") + SyncDaemon::daemon_name + ".pid").c_str());
             exit(0);
             break;
         default:
             logger.info() << "signal " << signal << " catched" << lend;
-            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << "..." << lend;
+            logger.debug() << "Deleting file " << std::string("/var/run/") + SyncDaemon::daemon_name + ".pid" << " ..." << lend;
             remove((std::string("/var/run/") + SyncDaemon::daemon_name + ".pid").c_str());
             exit(0);
             break;
     }
+}
+
+
+int add_subdirectory(const char *fpath, const struct stat *sb, int typeflag) {
+    if (typeflag == FTW_D){
+        global_directories_to_watch->push_back(std::string(fpath));
+    }
+    return 0;
+}
+
+int SyncDaemon::get_all_sub_directories() {
+    global_directories_to_watch = directories_to_watch;
+    ftw(watch_dir->c_str(),add_subdirectory,1);
+    global_directories_to_watch = NULL;
 }
